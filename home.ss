@@ -17,9 +17,9 @@
 (define (template name body)
   `(xsl:template
     (@ (match name))
-    (body))
+    (body)))
 
-  (define full-name "William Casarin"))
+(define full-name "William Casarin")
 
 (define (data:website name)
   `(website
