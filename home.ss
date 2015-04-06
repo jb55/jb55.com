@@ -1,5 +1,17 @@
 (import (scheme base)
+;        (oleg ssax)
         (scheme write))
+
+;; XSLT helpers
+(define (value-of path)
+  `(xsl:value-of (@ (select ,path))))
+
+(define (apply-templates name)
+  `(xsl:apply-templates
+    (@ (select ,name))))
+
+(define (template name body)
+  `(xsl:template (@ (match ,name)) ,body))
 
 (define <> string-append)
 
@@ -14,11 +26,6 @@
      (body
       "this is another post"))))
 
-(define (template name body)
-  `(xsl:template
-    (@ (match name))
-    (body)))
-
 (define full-name "William Casarin")
 
 (define (data:website name)
@@ -27,13 +34,32 @@
     (description ,(<> name "'s personal webpage"))
     (posts ,posts)))
 
-(define (page contents)
-  (lambda (get)
-    `(html
-      (head
-       (title ,(get "/website/title"))
-       (description ,(get "/website/description")))
-      (body
-       ,(contents)))))
+(define template:post
+  (template "post"
+            `(h1 ,(value-of "title"))))
 
-(display posts)
+(define template:posts
+  (template "posts"
+            `(li
+              ,(apply-templates "post"))))
+
+(define template:page
+  (template "/website"
+            `(html
+              (head
+               (title ,(value-of "title"))
+               (description ,(value-of "description")))
+              (body
+               (ul
+                ,(apply-templates "posts"))))))
+
+(define template:top
+  `((xsl:output
+     (@ (method "xml")
+        (indent "yes")
+        (encoding "UTF-8")))
+    ,template:page
+    ,template:posts
+    ,template:post))
+
+(display template:top)
