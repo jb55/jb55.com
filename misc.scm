@@ -28,5 +28,22 @@
 (define (symbol-append a b)
   (string->symbol (string-append (symbol->string a) (symbol->string b))))
 
+(define (@. v)
+  `(@ (class ,v)))
+
 (define xml-header
   `(*?* xml (@ (version "1.0"))))
+
+(define (val? val defv)
+  (cond
+   ((null? val) defv)
+   (else val)))
+
+(define (dl-elem title contents)
+  `((dt ,(@. title) ,title)
+    (dd ,contents)))
+
+(define (make-link prefix field)
+  `(a ,(attribute "href" `((*text* ,prefix)
+                           ,(value-of field)))
+      ,(value-of field)))

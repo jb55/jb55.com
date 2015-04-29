@@ -5,8 +5,18 @@
     (@ (select ,path))
     ()))
 
+(define (attribute attr contents)
+  `(xsl:attribute
+    (@ (name ,attr))
+    ,contents))
+
 (define (apply-templates name)
   `(xsl:apply-templates
+    (@ (select ,name))
+    ()))
+
+(define (call-template name)
+  `(xsl:call-template
     (@ (select ,name))
     ()))
 
