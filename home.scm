@@ -21,18 +21,19 @@
 (define data:website
   `(website
     (title "jb55.com")
+    (repository "https://github.com/jb55/jb55.com")
     (description ,(<> full-name "'s personal webpage"))
     (posts ,posts)))
 
 (define template:post
   (template
    "post"
-   `(h1 ,(value-of "title"))))
+   `(div ,(value-of "title"))))
 
 (define template:posts
   (template
    "posts"
-   `(li
+   `(ul
      ,(apply-templates "post"))))
 
 (define template:page
@@ -46,13 +47,10 @@
       (ul
        ,(apply-templates "posts"))))))
 
-(define xsl-stylesheet
-  `(,xml-header
-    (xsl:stylesheet (@ (version "1.0")
-                       (xmlns:xsl "http://www.w3.org/1999/XSL/Transform"))
-                    ,template:page
-                    ,template:posts
-                    ,template:post)))
+(define my-xsl
+  (stylesheet `(,template:page
+                ,template:posts
+                ,template:post)))
 
 (define (build-page stylesheet-uri xml)
   `(,xml-header
@@ -63,7 +61,7 @@
 (begin
   (let* ((xsl-uri "style.xsl")
          (page (sxml->xml (build-page xsl-uri data:website)))
-         (xsl-page (sxml->xml xsl-stylesheet)))
+         (xsl-page (sxml->xml my-xsl)))
     (call-with-output-file xsl-uri
       (lambda (out)
         (send-reply out xsl-page)))
