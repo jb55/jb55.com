@@ -28,21 +28,21 @@
 ; If #t occurs among the fragments, it is not written out
 ; but causes the result of SRV:send-reply to be #t
 
-(define (SRV:send-reply . fragments)
+(define (SRV:send-reply out . fragments)
   (let loop ((fragments fragments) (result #f))
     (cond
-      ((null? fragments) result)
-      ((not (car fragments)) (loop (cdr fragments) result))
-      ((null? (car fragments)) (loop (cdr fragments) result))
-      ((eq? #t (car fragments)) (loop (cdr fragments) #t))
-      ((pair? (car fragments))
-        (loop (cdr fragments) (loop (car fragments) result)))
-      ((procedure? (car fragments))
-        ((car fragments))
-        (loop (cdr fragments) #t))
-      (else
-        (display (car fragments))
-        (loop (cdr fragments) #t)))))
+     ((null? fragments) result)
+     ((not (car fragments)) (loop (cdr fragments) result))
+     ((null? (car fragments)) (loop (cdr fragments) result))
+     ((eq? #t (car fragments)) (loop (cdr fragments) #t))
+     ((pair? (car fragments))
+      (loop (cdr fragments) (loop (car fragments) result)))
+     ((procedure? (car fragments))
+      ((car fragments))
+      (loop (cdr fragments) #t))
+     (else
+      (display (car fragments) out)
+      (loop (cdr fragments) #t)))))
 
 
 

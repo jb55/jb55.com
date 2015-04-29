@@ -1,25 +1,10 @@
 (import (oleg ssax)
         (scheme base)
+        (scheme file)
         (scheme write))
 
-;; XSLT helpers
-(define (value-of path)
-  `(xsl:value-of
-    (@ (select ,path))
-    ()))
-
-(define (apply-templates name)
-  `(xsl:apply-templates
-    (@ (select ,name))
-    ()))
-
-(define (template name body)
-  `(xsl:template (@ (match ,name)) ,body))
-
-(define <> string-append)
-
-(define (symbol-append a b)
-  (string->symbol (string-append (symbol->string a) (symbol->string b))))
+(include "misc.scm")
+(include "xslt.scm")
 
 ; load from file?
 (define posts
@@ -30,7 +15,6 @@
            (date "April 5, 2015")
            (body
             "this is another post")))))
-
 
 (define full-name "William Casarin")
 
@@ -63,61 +47,24 @@
        ,(apply-templates "posts"))))))
 
 (define xsl-stylesheet
-  `((xsl:output
-     (@ (method "xml")
-        (indent "yes")
-        (encoding "UTF-8"))
-     ())
-    ,template:page
-    ,template:posts
-    ,template:post))
+  `(,xml-header
+    (xsl:stylesheet (@ (version "1.0")
+                       (xmlns:xsl="http://www.w3.org/1999/XSL/Transform"))
+                    ,template:page
+                    ,template:posts
+                    ,template:post)))
 
-(define (build-page stylesheet xml)
-  `(*?* xml (@ (version "1.0"))
-        (*?* xml-stylesheet (@ (type "text/xsl"))
-             ,stylesheet)
-        ,xml))
-
-(define (sxml->xml tree)
-  (send-reply
-   (pre-post-order
-    tree
-    `((@ ((*default* . ,(lambda (attr-key . value) (enattr attr-key value))))
-         . ,(lambda (trigger . value) (cons '@ value)))
-      (html:begin
-       . ,(lambda (tag title . elems)
-            (list
-             "Content-type: text/html"         ; HTTP headers
-             nl nl                            ; two nl end the headers
-             "<HTML><HEAD><TITLE>" title "</TITLE></HEAD>"
-             elems
-             "</HTML>")))))))
-
-(define (pi-entag tag elems)
-  (if (and (pair? elems)
-           (pair? (car elems))
-           (eq? '@ (caar elems)))
-      (list #\newline #\< '? tag (cdar elems) '? #\>
-            (and (pair? (cdr elems))
-                 (list (cdr elems) "</" tag #\>)))
-      (list #\newline #\< '? tag '? #\>
-            (and (pair? elems)
-                 (list elems "</" tag #\>)))))
-
-(define (sxml->xml tree)
- (send-reply
-   (pre-post-order tree
-    `((@
-      ((*default*
-        . ,(lambda (attr-key . value) (enattr attr-key value))))
-      . ,(lambda (trigger . value) (cons '@ value)))
-     (*default* . ,(lambda (tag . elems) (entag tag elems)))
-     (*?* . ,(lambda (pi tag . elems) (pi-entag tag elems)))
-     (*text* . ,(lambda (trigger str)
-		  (if (string? str) (string->goodHTML str) str)))
-     ))))
+(define (build-page stylesheet-uri xml)
+  `(,xml-header
+    (*?* xml-stylesheet (@ (type "text/xsl")
+                           (href ,stylesheet-uri)))
+    ,xml))
 
 (begin
- (let ((page (build-page xsl-stylesheet data:website)))
-   (sxml->xml page)
-   "\n"))
+  (let* ((xsl-uri "style.xsl")
+         (page (sxml->xml (build-page xsl-uri data:website)))
+         (xsl-page (sxml->xml xsl-stylesheet)))
+    (call-with-output-file xsl-uri
+      (lambda (out)
+        (send-reply out xsl-page)))
+    (send-reply (current-output-port) page)))
